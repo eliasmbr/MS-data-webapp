@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ exp_id }} - MS Data</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --text-primary: #d4d4d4;
+            --text-dim: #808080;
+            --accent: #569cd6;
+            --accent-secondary: #4ec9b0;
+            --border: #404040;
+            --hover-bg: #2a2d2e;
+            --overview-color: #4ec9b0;
+            --heatmap-color: #ce9178;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            padding-bottom: 60px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            color: var(--text-dim);
+        }
+        
+        .breadcrumb a {
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        .breadcrumb a:hover {
+            color: var(--accent);
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 0.5rem;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        h1 {
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            font-weight: 400;
+        }
+        
+        h1 i {
+            margin-right: 1rem;
+            color: var(--accent);
+        }
+        
+        .experiment-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .exp-nav-button {
+            display: flex;
+            align-items: center;
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .exp-nav-button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .search-container {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(86, 156, 214, 0.25);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+        
+        .tabs-container {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .tab {
+            padding: 0.75rem 1.25rem;
+            cursor: pointer;
+            color: var(--text-dim);
+            white-space: nowrap;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        .tab:hover {
+            color: var(--text-primary);
+        }
+        
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+        
+        .tab .badge {
+            background-color: var(--accent-secondary);
+            color: var(--bg-primary);
+            font-size: 0.7rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 1rem;
+            margin-left: 0.5rem;
+        }
+        
+        .tab-content {
+            padding: 1rem;
+        }
+        
+        .plot-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .plot-item {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .plot-item:hover {
+            border-color: var(--accent-secondary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .plot-item.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(86, 156, 214, 0.5);
+        }
+        
+        .plot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+        }
+        
+        .plot-title {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .plot-title i {
+            margin-right: 0.5rem;
+            color: var(--accent-secondary);
+        }
+        
+        .plot-badges {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .plot-category {
+            font-size: 0.75rem;
+            padding: 0.1rem 0.4rem;
+            background-color: var(--bg-primary);
+            border-radius: 3px;
+        }
+        
+        .plot-type {
+            font-size: 0.75rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            color: var(--bg-primary);
+        }
+        
+        .plot-type.overview {
+            background-color: var(--overview-color);
+        }
+        
+        .plot-type.heatmap {
+            background-color: var(--heatmap-color);
+        }
+        
+        .plot-viewer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background-color: rgba(30, 30, 30, 0.95);
+            border-top: 2px solid var(--accent);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .plot-viewer.show {
+            transform: translateY(0);
+        }
+        
+        .plot-viewer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .plot-viewer-title {
+            font-weight: 500;
+        }
+        
+        .plot-viewer-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .action-button {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .action-button:hover {
+            color: var(--accent);
+        }
+        
+        .plot-frame-container {
+            width: 100%;
+            height: calc(100% - 50px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .plot-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .plot-frame.loaded {
+            opacity: 1;
+        }
+        
+        .loading-spinner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        
+        .loading-spinner.visible {
+            display: block;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="/"><i class="bi bi-house-door"></i> Home</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>{{ exp_id }}</span>
+        </div>
+        
+        <div class="header">
+            <h1><i class="bi bi-graph-up"></i> {{ exp_id }} Data
+                {% if exp_id in custom_names %}
+                     - {{ custom_names[exp_id] }}
+                {% endif %}
+            </h1>
+            
+            <div class="experiment-nav">
+                {% if prev_exp %}
+                <a href="/experiment/{{ prev_exp }}" class="exp-nav-button">
+                    <i class="bi bi-arrow-left"></i> 
+                    {{ prev_exp }}
+                    {% if prev_exp in custom_names %}
+                        - {{ custom_names[prev_exp] }}
+                    {% endif %}
+                </a>
+                {% endif %}
+                
+                {% if next_exp %}
+                <a href="/experiment/{{ next_exp }}" class="exp-nav-button">
+                    {{ next_exp }}
+                    {% if next_exp in custom_names %}
+                        - {{ custom_names[next_exp] }}
+                    {% endif %}
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <i class="bi bi-search search-icon"></i>
+            <input type="text" class="search-input" id="plotFilter" placeholder="Filter plots by name, category...">
+        </div>
+        
+        <div class="tabs-container">
+            <div class="tabs">
+                <div class="tab active" data-target="all">
+                    All Plots <span class="badge total-badge"></span>
+                </div>
+                
+                {% for category in categories %}
+                <div class="tab" data-target="{{ category|replace('-', '_') }}">
+                    {{ category }} <span class="badge">{{ plots[category]|length }}</span>
+                </div>
+                {% endfor %}
+                
+                {% set overview_count = 0 %}
+                {% set heatmap_count = 0 %}
+                
+                {% for category, plots_list in plots.items() %}
+                    {% for plot in plots_list %}
+                        {% if plot.is_overview %}
+                            {% set overview_count = overview_count + 1 %}
+                        {% endif %}
+                        {% if plot.is_heatmap %}
+                            {% set heatmap_count = heatmap_count + 1 %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+                
+                {% if overview_count > 0 %}
+                <div class="tab" data-target="overview">
+                    Overview <span class="badge">{{ overview_count }}</span>
+                </div>
+                {% endif %}
+                
+                {% if heatmap_count > 0 %}
+                <div class="tab" data-target="heatmap">
+                    Heatmaps <span class="badge">{{ heatmap_count }}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="tab-content">
+                <div class="plot-list" id="all">
+                    {% for category, plots_list in plots.items() %}
+                        {% for plot in plots_list %}
+                            <div class="plot-item" 
+                                 data-category="{{ category }}"
+                                 data-overview="{{ plot.is_overview|int }}"
+                                 data-heatmap="{{ plot.is_heatmap|int }}"
+                                 data-condition="{{ plot.condition }}">
+                                <div class="plot-header" data-path="{{ plot.path }}">
+                                    <div class="plot-title">
+                                        <i class="bi bi-file-earmark-bar-graph"></i>
+                                        <span class="condition-name">{{ plot.condition }}</span>
+                                    </div>
+                                    
+                                    <div class="plot-badges">
+                                        <span class="plot-category">{{ category }}</span>
+                                        
+                                        {% if plot.is_overview %}
+                                            <span class="plot-type overview">Overview</span>
+                                        {% elif plot.is_heatmap %}
+                                            <span class="plot-type heatmap">Heatmap</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                
+                {% for category in categories %}
+                    <div class="plot-list" id="{{ category|replace('-', '_') }}" style="display: none;">
+                        {% for plot in plots[category] %}
+                            <div class="plot-item"
+                                 data-category="{{ category }}"
+                                 data-overview="{{ plot.is_overview|int }}"
+                                 data-heatmap="{{ plot.is_heatmap|int }}"
+                                 data-condition="{{ plot.condition }}">
+                                <div class="plot-header" data-path="{{ plot.path }}">
+                                    <div class="plot-title">
+                                        <i class="bi bi-file-earmark-bar-graph"></i>
+                                        <span class="condition-name">{{ plot.condition }}</span>
+                                    </div>
+                                    
+                                    <div class="plot-badges">
+                                        {% if plot.is_overview %}
+                                            <span class="plot-type overview">Overview</span>
+                                        {% elif plot.is_heatmap %}
+                                            <span class="plot-type heatmap">Heatmap</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                
+                {% if overview_count > 0 %}
+                    <div class="plot-list" id="overview" style="display: none;">
+                        {% for category, plots_list in plots.items() %}
+                            {% for plot in plots_list %}
+                                {% if plot.is_overview %}
+                                    <div class="plot-item"
+                                         data-category="{{ category }}"
+                                         data-overview="1"
+                                         data-condition="{{ plot.condition }}">
+                                        <div class="plot-header" data-path="{{ plot.path }}">
+                                            <div class="plot-title">
+                                                <i class="bi bi-file-earmark-bar-graph"></i>
+                                                <span class="condition-name">{{ plot.condition }}</span>
+                                            </div>
+                                            
+                                            <div class="plot-badges">
+                                                <span class="plot-category">{{ category }}</span>
+                                                <span class="plot-type overview">Overview</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                {% if heatmap_count > 0 %}
+                    <div class="plot-list" id="heatmap" style="display: none;">
+                        {% for category, plots_list in plots.items() %}
+                            {% for plot in plots_list %}
+                                {% if plot.is_heatmap %}
+                                    <div class="plot-item"
+                                         data-category="{{ category }}"
+                                         data-heatmap="1"
+                                         data-condition="{{ plot.condition }}">
+                                        <div class="plot-header" data-path="{{ plot.path }}">
+                                            <div class="plot-title">
+                                                <i class="bi bi-file-earmark-bar-graph"></i>
+                                                <span class="condition-name">{{ plot.condition }}</span>
+                                            </div>
+                                            
+                                            <div class="plot-badges">
+                                                <span class="plot-category">{{ category }}</span>
+                                                <span class="plot-type heatmap">Heatmap</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="plot-viewer" id="plotViewer">
+        <div class="plot-viewer-header">
+            <div class="plot-viewer-title" id="plotTitle">Plot Viewer</div>
+            <div class="plot-viewer-actions">
+                <button class="action-button" id="expandBtn" title="Expand/Collapse">
+                    <i class="bi bi-arrows-fullscreen"></i>
+                </button>
+                <button class="action-button" id="closeBtn" title="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div class="plot-frame-container">
+            <div class="loading-spinner" id="loadingSpinner"></div>
+            <iframe class="plot-frame" id="plotFrame" src="about:blank"></iframe>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Document loaded');
+            
+            // Count total plots
+            const totalPlots = document.querySelectorAll('.plot-item').length;
+            document.querySelector('.total-badge').textContent = totalPlots;
+            console.log('Total plots:', totalPlots);
+            
+            // Tab switching
+            const tabs = document.querySelectorAll('.tab');
+            console.log('Found tabs:', tabs.length);
+            
+            tabs.forEach((tab, index) => {
+                console.log('Setting up tab:', index, tab.textContent.trim());
+                tab.addEventListener('click', () => {
+                    console.log('Tab clicked:', tab.getAttribute('data-target'));
+                    
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    tab.classList.add('active');
+                    
+                    // Hide all plot lists
+                    const plotLists = document.querySelectorAll('.plot-list');
+                    console.log('Plot lists to hide:', plotLists.length);
+                    plotLists.forEach(list => {
+                        list.style.display = 'none';
+                    });
+                    
+                    // Show the selected list
+                    const targetId = tab.getAttribute('data-target');
+                    console.log('Showing target:', targetId);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.style.display = 'flex';
+                        console.log('Target element displayed');
+                    } else {
+                        console.error('Target element not found:', targetId);
+                    }
+                });
+            });
+            
+            // Handle plot viewing
+            const plotViewer = document.getElementById('plotViewer');
+            const plotFrame = document.getElementById('plotFrame');
+            const plotTitle = document.getElementById('plotTitle');
+            const closeBtn = document.getElementById('closeBtn');
+            const expandBtn = document.getElementById('expandBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            
+            // Filter functionality
+            const plotFilter = document.getElementById('plotFilter');
+            plotFilter.addEventListener('input', function() {
+                const filterText = this.value.toLowerCase();
+                console.log('Filtering for:', filterText);
+                const plotItems = document.querySelectorAll('.plot-item');
+                
+                plotItems.forEach(item => {
+                    const condition = item.getAttribute('data-condition').toLowerCase();
+                    const category = item.getAttribute('data-category').toLowerCase();
+                    
+                    if (condition.includes(filterText) || category.includes(filterText)) {
+                        item.style.display = '';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+            
+            // View plot handlers
+            const plotHeaders = document.querySelectorAll('.plot-header');
+            console.log('Found plot headers:', plotHeaders.length);
+            
+            plotHeaders.forEach((header, index) => {
+                if (index < 5) {  // Log just a few to avoid console spam
+                    console.log('Plot header path:', header.getAttribute('data-path'));
+                }
+                
+                header.addEventListener('click', function() {
+                    const path = this.getAttribute('data-path');
+                    console.log('Plot clicked:', path);
+                    
+                    const conditionElement = this.querySelector('.condition-name');
+                    const condition = conditionElement ? conditionElement.textContent.trim() : 'Plot';
+                    console.log('Condition:', condition);
+                    
+                    // Update selection styling
+                    document.querySelectorAll('.plot-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    this.closest('.plot-item').classList.add('selected');
+                    
+                    // Show loading spinner
+                    plotFrame.classList.remove('loaded');
+                    loadingSpinner.classList.add('visible');
+                    
+                    // Update iframe
+                    console.log('Setting iframe src to:', '/view/' + path);
+                    plotFrame.src = '/view/' + path;
+                    plotTitle.textContent = condition;
+                    
+                    // Show viewer
+                    console.log('Showing plot viewer');
+                    plotViewer.classList.add('show');
+                });
+            });
+            
+            // Handle iframe load event
+            plotFrame.addEventListener('load', function() {
+                console.log('Plot frame loaded');
+                
+                // Hide loading spinner
+                loadingSpinner.classList.remove('visible');
+                
+                // Add loaded class for fade-in effect
+                plotFrame.classList.add('loaded');
+                
+                // Add styles to center content in the iframe
+                try {
+                    const iframeDoc = plotFrame.contentWindow.document;
+                    const style = iframeDoc.createElement('style');
+                    style.textContent = `
+                        body { 
+                            background: #1e1e1e !important; 
+                            margin: 0 !important;
+                            display: flex !important;
+                            justify-content: center !important;
+                            align-items: center !important;
+                            min-height: 100vh !important;
+                        }
+                    `;
+                    iframeDoc.head.appendChild(style);
+                    console.log('Applied styles to iframe');
+                } catch (error) {
+                    console.warn('Could not apply styles to iframe:', error);
+                }
+            });
+            
+            // Close plot viewer
+            closeBtn.addEventListener('click', function() {
+                console.log('Close button clicked');
+                plotViewer.classList.remove('show');
+                setTimeout(() => {
+                    plotFrame.src = 'about:blank';
+                    plotFrame.classList.remove('loaded');
+                }, 300);
+                
+                // Remove selection
+                document.querySelectorAll('.plot-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+            });
+            
+            // Toggle fullscreen
+            let isFullscreen = false;
+            expandBtn.addEventListener('click', function() {
+                console.log('Expand button clicked, current state:', isFullscreen);
+                if (isFullscreen) {
+                    plotViewer.style.height = '60%';
+                    this.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+                } else {
+                    plotViewer.style.height = '90%';
+                    this.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+                }
+                isFullscreen = !isFullscreen;
+            });
+        });
+    </script>
+</body>
+</html>
