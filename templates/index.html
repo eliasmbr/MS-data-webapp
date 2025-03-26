@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MS Data Browser</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #1E1E1E; /* Fallback dark color */
+            background-color: {{ dark_bg }};
+            color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card {
+            background-color: #252526;
+            border: 1px solid #3e3e42;
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .card-header {
+            background-color: #333333;
+            border-bottom: 1px solid #3e3e42;
+        }
+        .nav-pills .nav-link {
+            color: #f8f9fa;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+        }
+        .badge {
+            font-size: 0.8em;
+        }
+        .group-container {
+            margin-bottom: 30px;
+        }
+        .group-header {
+            border-bottom: 1px solid #3e3e42;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+        }
+        .overview-indicator {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #0d6efd;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 0 4px 0 4px;
+            font-size: 0.75rem;
+        }
+        .edit-name-btn {
+            color: #f8f9fa;
+            background-color: transparent;
+            border: none;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .edit-name-btn:hover {
+            color: #0d6efd;
+        }
+        .dataset-name {
+            font-weight: 500;
+        }
+        .dataset-title-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .name-form {
+            display: none;
+            margin-top: 0.5rem;
+        }
+        .name-form.active {
+            display: flex;
+        }
+        .experiment-id {
+            color: #a0a0a0;
+            font-size: 0.85em;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-5 mb-4">mass spec data</h1>
+                <p class="lead">Browse {{ sorted_experiments|length }} datasets.</p>
+            </div>
+        </div>
+        
+        <div class="row">
+            {% for exp_id in sorted_experiments %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="dataset-title-container">
+                                <div>
+                                    <h5 class="mb-0">
+                                        <span class="dataset-name">
+                                            {% if exp_id in custom_names %}
+                                                {{ exp_id }} - {{ custom_names[exp_id] }}
+                                            {% else %}
+                                                {{ exp_id }}
+                                            {% endif %}
+                                        </span>
+                                        <button class="edit-name-btn" data-exp-id="{{ exp_id }}">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </button>
+                                    </h5>
+                                    <form action="/update_name/{{ exp_id }}" method="POST" class="name-form" id="form-{{ exp_id }}">
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" name="custom_name" 
+                                                   placeholder="Enter custom name" 
+                                                   value="{{ custom_names.get(exp_id, '') }}">
+                                            <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                                            <button type="button" class="btn btn-sm btn-secondary cancel-btn">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                                <span class="badge bg-info">{{ exp_counts[exp_id] }} plots</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="categories mb-3">
+                                {% for category, plots_list in plots[exp_id].items() %}
+                                    <span class="badge bg-secondary me-1">{{ category }} ({{ plots_list|length }})</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <p class="mb-1">
+                                {% set overview_plots = [] %}
+                                {% for category, plots_list in plots[exp_id].items() %}
+                                    {% for plot in plots_list %}
+                                        {% if plot.is_overview %}
+                                            {% set _ = overview_plots.append(plot) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                
+                                {% if overview_plots %}
+                                    <strong>Overview plots available:</strong> {{ overview_plots|length }}
+                                {% else %}
+                                    <span class="text-muted">No overview plots available</span>
+                                {% endif %}
+                            </p>
+                            
+                            <a href="/experiment/{{ exp_id }}" class="btn btn-primary w-100 mt-3">
+                                <i class="bi bi-graph-up"></i> Browse Data
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle edit name buttons
+            const editButtons = document.querySelectorAll('.edit-name-btn');
+            
+            editButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const expId = this.getAttribute('data-exp-id');
+                    const form = document.getElementById(`form-${expId}`);
+                    
+                    // Toggle the form visibility
+                    form.classList.toggle('active');
+                    
+                    // Focus on the input field if the form is now visible
+                    if (form.classList.contains('active')) {
+                        form.querySelector('input').focus();
+                    }
+                });
+            });
+            
+            // Handle cancel buttons
+            const cancelButtons = document.querySelectorAll('.cancel-btn');
+            
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Find the parent form and hide it
+                    const form = this.closest('.name-form');
+                    form.classList.remove('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
