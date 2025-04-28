@@ -17,6 +17,8 @@
             --hover-bg: #2a2d2e;
             --overview-color: #4ec9b0;
             --heatmap-color: #ce9178;
+            --download-color: #4CAF50;
+            --download-hover: #45a049;
         }
         
         * {
@@ -333,6 +335,81 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        
+        /* Custom name form and download button styles */
+        .experiment-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+        }
+        
+        .experiment-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .custom-name-form {
+            display: flex;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .custom-name-form input {
+            flex: 1;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-primary);
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+        
+        .custom-name-form input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .custom-name-form button {
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .custom-name-form button:hover {
+            background-color: var(--accent-secondary);
+        }
+        
+        .download-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: var(--download-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+        
+        .download-button:hover {
+            background-color: var(--download-hover);
+        }
     </style>
 </head>
 <body>
@@ -368,6 +445,23 @@
                         - {{ custom_names[next_exp] }}
                     {% endif %}
                     <i class="bi bi-arrow-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- New experiment controls section -->
+        <div class="experiment-controls">
+            <div class="experiment-actions">
+                <form action="{{ url_for('update_dataset_name', exp_id=exp_id) }}" method="post" class="custom-name-form">
+                    <input type="text" name="custom_name" placeholder="Add custom name" 
+                           value="{{ custom_names.get(exp_id, '') }}">
+                    <button type="submit">Save</button>
+                </form>
+                
+                {% if raw_data_available %}
+                <a href="{{ url_for('download_raw_data', exp_id=exp_id) }}" class="download-button">
+                    <i class="bi bi-download"></i> Download Raw Data
                 </a>
                 {% endif %}
             </div>

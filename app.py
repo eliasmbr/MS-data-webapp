@@ -1,7 +1,7 @@
 import os
 import re
 import json
-from flask import Flask, render_template, abort, send_from_directory, request, redirect, url_for
+from flask import Flask, render_template, abort, send_from_directory, request, redirect, url_for, send_file
 from collections import defaultdict
 
 app = Flask(__name__)
@@ -80,6 +80,17 @@ def organize_plots():
     
     return plots, sorted_experiments, experiment_counts, custom_names
 
+def get_raw_data_path(exp_id):
+    """Get path to raw data Excel file for a given experiment ID."""
+    # Raw data is one folder up from the current directory
+    raw_data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data'))
+    raw_data_file = f"{exp_id}_raw.xlsx"
+    raw_data_path = os.path.join(raw_data_dir, raw_data_file)
+    
+    if os.path.exists(raw_data_path):
+        return raw_data_path
+    return None
+
 @app.route('/')
 def index():
     plots, sorted_experiments, exp_counts, custom_names = organize_plots()
@@ -119,6 +130,9 @@ def experiment_detail(exp_id):
     prev_exp = sorted_experiments[exp_index + 1] if exp_index < len(sorted_experiments) - 1 else None
     next_exp = sorted_experiments[exp_index - 1] if exp_index > 0 else None
     
+    # Check if raw data file exists
+    raw_data_available = get_raw_data_path(exp_id) is not None
+    
     return render_template('experiment.html',
                           exp_id=exp_id,
                           categories=categories,
@@ -126,13 +140,28 @@ def experiment_detail(exp_id):
                           prev_exp=prev_exp,
                           next_exp=next_exp,
                           custom_names=custom_names,
-                          dark_bg=DARK_BG)
+                          dark_bg=DARK_BG,
+                          raw_data_available=raw_data_available)
 
 @app.route('/view/<path:file_path>')
 def view_plot(file_path):
     """Serve the HTML file for viewing."""
     directory, filename = os.path.split(file_path)
     return send_from_directory(os.path.join(DATA_DIR, directory), filename)
+
+@app.route('/download_raw/<exp_id>')
+def download_raw_data(exp_id):
+    """Serve the raw data Excel file for download."""
+    raw_data_path = get_raw_data_path(exp_id)
+    
+    if raw_data_path:
+        directory, filename = os.path.split(raw_data_path)
+        return send_file(raw_data_path, 
+                        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        as_attachment=True,
+                        download_name=filename)
+    else:
+        abort(404)
 
 @app.route('/update_name/<exp_id>', methods=['POST'])
 def update_dataset_name(exp_id):
